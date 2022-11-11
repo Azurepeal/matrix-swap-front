@@ -9,6 +9,41 @@ import { AxelarEndpoint } from 'src/query-key';
 import { tokenListMap } from '../chain/atom';
 import { tokenInAddressAtom, tokenInAmountAtom, tokenOutAddressAtom } from '../swap/atom';
 
+const crossChainTokenMap: Record<Chain, Token[]> = {
+  polygon: [
+    {
+      address: '0x750e4C4984a9e0f12978eA6742Bc1c5D248f40ed',
+      name: 'uusdc',
+      symbol: 'axlUSDC',
+      decimals: 6,
+      logoURI: 'https://docs.axelar.dev/images/assets/usdc.svg',
+    },
+    {
+      address: '0x6e4E624106Cb12E168E6533F8ec7c82263358940',
+      name: 'uaxl',
+      symbol: 'wAXL',
+      decimals: 6,
+      logoURI: 'https://docs.axelar.dev/images/assets/axl.svg',
+    },
+  ],
+  BNB: [
+    {
+      address: '0x4268B8F0B87b6Eae5d897996E6b845ddbD99Adf3',
+      name: 'uusdc',
+      symbol: 'axlUSDC',
+      decimals: 6,
+      logoURI: 'https://docs.axelar.dev/images/assets/usdc.svg',
+    },
+    {
+      address: '0x8b1f4432F943c465A973FeDC6d7aa50Fc96f1f65',
+      name: 'uaxl',
+      symbol: 'wAXL',
+      decimals: 6,
+      logoURI: 'https://docs.axelar.dev/images/assets/axl.svg',
+    },
+  ],
+};
+
 export const fromChainAtom = atom<Chain>('BNB');
 
 export const toChainAtom = atom<Chain>('polygon');
@@ -26,6 +61,7 @@ export const toTokenEndpoint = atom<string>(get => {
 });
 
 export const fromTokenListAtom = atom<Token[]>(get => {
+  return crossChainTokenMap[get(fromChainAtom)];
   return _.intersectionBy(
     tokenListMap[get(fromChainAtom)],
     tokenListMap[get(toChainAtom)],
@@ -34,6 +70,7 @@ export const fromTokenListAtom = atom<Token[]>(get => {
 });
 
 export const toTokenListAtom = atom<Token[]>(get => {
+  return crossChainTokenMap[get(toChainAtom)];
   return _.intersectionBy(
     tokenListMap[get(toChainAtom)],
     tokenListMap[get(fromChainAtom)],

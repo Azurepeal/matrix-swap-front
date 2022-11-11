@@ -64,7 +64,7 @@ const CrossChain = ({
 
   const chain = useAtomValue(chainAtom);
 
-  const { address, sendTransaction } = useWallet();
+  const { address, sendTransaction, walletExtension } = useWallet();
   const toast = useToast();
 
   const selectedTokenIn = useAtomValue(fromTokenAtom);
@@ -178,12 +178,8 @@ const CrossChain = ({
 
   const fromChain = useAtomValue(fromChainAtom);
   const toChain = useAtomValue(toChainAtom);
-  const fromTokenList = useAtomValue(fromTokenListAtom).filter(
-    x => x.symbol !== selectedTokenOut?.symbol,
-  );
-  const toTokenList = useAtomValue(toTokenListAtom).filter(
-    x => x.symbol !== selectedTokenIn?.symbol,
-  );
+  const fromTokenList = useAtomValue(fromTokenListAtom);
+  const toTokenList = useAtomValue(toTokenListAtom);
 
   return (
     <>
@@ -213,6 +209,7 @@ const CrossChain = ({
 
           <TokenAmountInput
             tokenAddressAtom={tokenInAddressAtom}
+            counterTokenAddressAtom={tokenOutAddressAtom}
             amount={tokenInAmountString}
             handleChange={handleChange}
             modalHeaderTitle={`You Sell`}
@@ -236,6 +233,7 @@ const CrossChain = ({
 
           <TokenAmountInput
             tokenAddressAtom={tokenOutAddressAtom}
+            counterTokenAddressAtom={tokenInAddressAtom}
             amount={maxTokenOutAmount}
             isReadOnly
             modalHeaderTitle="You Buy"
@@ -260,11 +258,14 @@ const CrossChain = ({
             colorScheme="primary"
             onClick={async () => {
               if (!data || !address || !tokenInAddress) return;
-              const transaction = data.find(
-                x => x?.dexAgg.expectedAmountOut === maxTokenOutAmount.toString(),
-              )?.metamaskSwapTransaction;
-              if (!transaction) return;
-              const { gasLimit, ...rest } = transaction;
+
+              const transaction = sortedPreviewResults ? sortedPreviewResults[0] : null;
+              if (!transaction || !walletExtension) return;
+
+              const targetChain = transaction.chain;
+              const { gasLimit, ...rest } = transaction.metamaskSwapTransaction;
+
+              walletExtension.switchChain(targetChain);
 
               const provider = new ethers.providers.Web3Provider(
                 window.ethereum as unknown as ethers.providers.ExternalProvider,
@@ -329,7 +330,7 @@ const CrossChain = ({
                     title: 'Success!',
                     description: (
                       <a
-                        href={config.chain.metaData[chain]?.getBlockExplorerUrl(
+                        href={config.chain.metaData[targetChain]?.getBlockExplorerUrl(
                           txHash,
                         )}>{`Your transaction(${txHash}) is approved!`}</a>
                     ),

@@ -181,6 +181,109 @@ const CrossChain = ({
   const toChain = useAtomValue(toChainAtom);
   const fromTokenList = useAtomValue(fromTokenListAtom);
   const toTokenList = useAtomValue(toTokenListAtom);
+  const fromToken = useAtomValue(fromTokenAtom);
+  const toToken = useAtomValue(toTokenAtom);
+
+  const isSameToken = fromToken?.symbol === toToken?.symbol;
+
+  const handleClickSwap = async () => {
+    if (!data || !address || !tokenInAddress) return;
+
+    const transaction = sortedPreviewResults ? sortedPreviewResults[0] : null;
+    if (!transaction || !walletExtension) return;
+
+    const targetChain = transaction.chain;
+    const { gasLimit, ...rest } = transaction.metamaskSwapTransaction;
+
+    walletExtension.switchChain(targetChain);
+
+    const provider = new ethers.providers.Web3Provider(
+      window.ethereum as unknown as ethers.providers.ExternalProvider,
+    );
+    const signer = provider.getSigner();
+
+    if (tokenInAddress !== '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
+      const erc20 = IERC20__factory.connect(tokenInAddress, signer);
+      const allowance = await erc20.allowance(
+        address,
+        '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+      );
+
+      if (allowance.eq(0)) {
+        try {
+          const tx = await erc20.approve(
+            '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+            ethers.constants.MaxUint256,
+          );
+          const receipt = await tx.wait();
+
+          if (receipt.status !== 1) {
+            throw new Error('Approve failed');
+          }
+        } catch (e) {
+          toast({
+            title: 'Failed to send transaction',
+            description: 'Need to approve first!',
+            status: 'error',
+            position: 'top-right',
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
+      }
+    }
+
+    try {
+      const txHash = await sendTransaction({
+        ...rest,
+        value: BigNumber.from(rest.value).toHexString(),
+      });
+
+      if (!txHash) throw new Error('invalid transaction!');
+
+      const toastId = toast({
+        title: 'Success!',
+        description: `Your transaction has sent: ${txHash}`,
+        status: 'success',
+        position: 'top-right',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      const receipt = await provider.waitForTransaction(txHash);
+      updateFetchKey(+new Date());
+      if (receipt) {
+        // success
+        if (toastId) toast.close(toastId);
+        toast({
+          title: 'Success!',
+          description: (
+            <a
+              href={config.chain.metaData[targetChain]?.getBlockExplorerUrl(
+                txHash,
+              )}>{`Your transaction(${txHash}) is approved!`}</a>
+          ),
+          status: 'success',
+          position: 'top-right',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        // fail
+      }
+      logger.debug('txhash', txHash);
+    } catch (e) {
+      toast({
+        title: 'Failed to send transaction',
+        description: 'Sorry. Someting went wrong, please try again',
+        status: 'error',
+        position: 'top-right',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <>
@@ -210,7 +313,6 @@ const CrossChain = ({
 
           <TokenAmountInput
             tokenAddressAtom={tokenInAddressAtom}
-            counterTokenAddressAtom={tokenOutAddressAtom}
             amount={tokenInAmountString}
             handleChange={handleChange}
             modalHeaderTitle={`You Sell`}
@@ -234,7 +336,6 @@ const CrossChain = ({
 
           <TokenAmountInput
             tokenAddressAtom={tokenOutAddressAtom}
-            counterTokenAddressAtom={tokenInAddressAtom}
             amount={maxTokenOutAmount}
             isReadOnly
             modalHeaderTitle="You Buy"
@@ -250,7 +351,7 @@ const CrossChain = ({
           <Box w="100%" h={12} />
 
           <Button
-            isDisabled={!address || !data || pageMode === 'flash'}
+            isDisabled={!address || !data || pageMode === 'flash' || !isSameToken}
             w="100%"
             size="lg"
             height={['48px', '54px', '54px', '64px']}

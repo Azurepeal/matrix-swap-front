@@ -43,7 +43,7 @@ const config: MetaConfig = {
         metamaskParams: {
           chainId: ethers.utils.hexlify(56),
           chainName: 'Binance Smart Chain Mainnet',
-          rpcUrls: ['https://polygonapi.terminet.io/rpc']
+          rpcUrls: ['https://bsc-dataseed.binance.org']
         },
         nativeToken: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         wrappedNativeToken: '0xd4949664cd82660aae99bedc034a0dea8a0bd517',

@@ -16,7 +16,9 @@ import { ethers } from 'ethers';
 import { useAtomValue } from 'jotai';
 import Image from 'next/image';
 
+import config from 'meta.config';
 import MetaMaskLogoImg from 'public/metamask-logo.svg';
+import { chainAtom } from 'src/domain/chain/atom';
 import { tokenInAddressAtom } from 'src/domain/swap/atom';
 import { useWallet } from 'src/hooks/useWallet';
 import { logger } from 'src/utils/logger';
@@ -41,6 +43,7 @@ const ConnectWalletDialog = ({ isOpen, onClose }: Props) => {
   const [hasReadRiskDocument, setHasReadRiskDocument] = useState(false);
   const [checkList, setCheckList] = useState(agreementList.map(() => false));
   const isAllChecked = checkList.every(item => item);
+  const chain = useAtomValue(chainAtom);
 
   useEffect(() => {
     if (!address) return;
@@ -77,7 +80,7 @@ const ConnectWalletDialog = ({ isOpen, onClose }: Props) => {
     const erc20 = IERC20__factory.connect(tokenIn, signer);
     const allowance = await erc20.allowance(
       response.address,
-      '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+      config.chain.metaData[chain].approveProxyAddress,
     );
 
     if (allowance.gt(0)) {
@@ -87,7 +90,7 @@ const ConnectWalletDialog = ({ isOpen, onClose }: Props) => {
 
     try {
       const tx = await erc20.approve(
-        '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+        config.chain.metaData[chain].approveProxyAddress,
         ethers.constants.MaxUint256,
       );
       const receipt = await tx.wait();

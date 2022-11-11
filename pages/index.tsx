@@ -278,13 +278,13 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
                 const erc20 = IERC20__factory.connect(tokenInAddress, signer);
                 const allowance = await erc20.allowance(
                   address,
-                  '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+                  config.chain.metaData[chain].approveProxyAddress,
                 );
 
                 if (allowance.eq(0)) {
                   try {
                     const tx = await erc20.approve(
-                      '0xb0e950099c29a4e61c77f9185c5f5f76cd9d4393',
+                      config.chain.metaData[chain].approveProxyAddress,
                       ethers.constants.MaxUint256,
                     );
                     const receipt = await tx.wait();

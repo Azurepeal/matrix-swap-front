@@ -1,5 +1,3 @@
-import { ethers } from 'ethers';
-
 import config from 'meta.config';
 import { Chain } from 'src/domain/chain/types';
 
@@ -65,7 +63,7 @@ export class Metamask implements WalletExtension {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: ethers.utils.hexlify(9001) }],
+          params: [{ chainId: chainMetaData.metamaskParams.chainId }],
         });
       } catch (switchError) {
         // This error code indicates that the chain has not been added to MetaMask.

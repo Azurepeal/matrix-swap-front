@@ -208,6 +208,7 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
             isInvalid={isError}
             showBalance={!!address}
             tokenList={tokenListMap[chain]}
+            chain={chain}
           />
 
           <Flex alignItems="center" marginY={8}>
@@ -228,6 +229,7 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
             modalHeaderTitle="You Buy"
             label={`You Buy`}
             tokenList={tokenListMap[chain]}
+            chain={chain}
           />
 
           <Box w="100%" h={12} />

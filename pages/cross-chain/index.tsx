@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 
@@ -6,15 +6,14 @@ import { useQuery } from 'react-query';
 
 import { ArrowUpDownIcon, RepeatIcon } from '@chakra-ui/icons';
 import { Box, Divider, Flex, HStack, Button, IconButton, useToast } from '@chakra-ui/react';
-import Decimal from 'decimal.js';
 import { BigNumber, ethers } from 'ethers';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useAtomCallback, useHydrateAtoms } from 'jotai/utils';
 
 import config from 'meta.config';
-import { fetchQuoteCrossChain } from 'src/api/quote';
+import { CrossChainFetchResult, fetchQuoteCrossChain } from 'src/api/quote';
 import SlippageInput from 'src/components/SlippageInput';
-import SwapPreviewResult from 'src/components/SwapPreviewResult';
+import { CrossChainSwapPreviewResult } from 'src/components/SwapPreviewResult';
 import TokenAmountInput from 'src/components/TokenAmountInput';
 import { keyMap } from 'src/constant/storage-key';
 import { chainAtom, defaultTokenList } from 'src/domain/chain/atom';
@@ -41,7 +40,6 @@ import {
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useWallet } from 'src/hooks/useWallet';
 import queryKeys from 'src/query-key';
-import { QuoteResponseDto } from 'src/types';
 import { logger } from 'src/utils/logger';
 import { removeDotExceptFirstOne } from 'src/utils/with-comma';
 import { IERC20__factory } from 'types/ethers-contracts/factories';
@@ -107,23 +105,12 @@ const CrossChain = ({
   const getTokenOutDenom = useAtomValue(getTokenOutDenomAtom);
   const updateFetchKey = useSetAtom(balanceFetchKey);
 
-  const [previewResult, setPreviewResult] = useState<Omit<
-    QuoteResponseDto,
-    'ts' | 'error'
-  > | null>();
-  const tokenOutAmount = previewResult
-    ? getTokenOutDenom(previewResult.dexAgg.expectedAmountOut)
-    : 0;
-
   const [needRefreshTimer, setNeedRefreshTimer] = useState(false);
 
   const swapEndpoints = useAtomValue(crossChainSwapEndpointsAtom);
   const { data, isLoading, isRefetching, refetch, isError } = useQuery(
     queryKeys.quote.axelar(swapEndpoints, {
-      tokenInAddr: selectedTokenIn!.address,
-      tokenOutAddr: selectedTokenOut!.address,
       from: address!,
-      amount: new Decimal(tokenInAmount).mul(Math.pow(10, selectedTokenIn!.decimals)).toFixed(),
       slippageBps: slippageRatio * 100,
       /**
        * constant
@@ -143,6 +130,25 @@ const CrossChain = ({
       retry: 3,
     },
   );
+
+  const previewResults = useMemo(() => {
+    if (!data || !selectedTokenOut || isError || !debouncedTokenInAmount) return null;
+    return data;
+  }, [data, selectedTokenOut, isError, debouncedTokenInAmount]);
+
+  const sortedPreviewResults = previewResults
+    ? previewResults
+        .filter((x): x is Exclude<CrossChainFetchResult, undefined> => !!x)
+        .sort(
+          (a, b) =>
+            getTokenOutDenom(b.dexAgg.expectedAmountOut) -
+            getTokenOutDenom(a.dexAgg.expectedAmountOut),
+        )
+    : 0;
+
+  const maxTokenOutAmount = sortedPreviewResults
+    ? getTokenOutDenom(sortedPreviewResults[0].dexAgg.expectedAmountOut)
+    : '0';
 
   const handleClickReverse = useAtomCallback(
     useCallback(
@@ -164,25 +170,6 @@ const CrossChain = ({
   );
 
   useEffect(() => {
-    if (!data || !selectedTokenOut) return;
-    logger.debug(data);
-
-    setPreviewResult(data);
-  }, [data, selectedTokenOut]);
-
-  useEffect(() => {
-    if (!isError) return;
-    setPreviewResult(null);
-  }, [isError]);
-
-  useEffect(() => {
-    if (!debouncedTokenInAmount) {
-      setPreviewResult(null);
-      return;
-    }
-  }, [debouncedTokenInAmount]);
-
-  useEffect(() => {
     if (!selectedTokenIn || !selectedTokenOut) return;
 
     localStorage.setItem(keyMap.SWAP_FROM_TOKEN, JSON.stringify(selectedTokenIn));
@@ -191,8 +178,12 @@ const CrossChain = ({
 
   const fromChain = useAtomValue(fromChainAtom);
   const toChain = useAtomValue(toChainAtom);
-  const fromTokenList = useAtomValue(fromTokenListAtom);
-  const toTokenList = useAtomValue(toTokenListAtom);
+  const fromTokenList = useAtomValue(fromTokenListAtom).filter(
+    x => x.symbol !== selectedTokenOut?.symbol,
+  );
+  const toTokenList = useAtomValue(toTokenListAtom).filter(
+    x => x.symbol !== selectedTokenIn?.symbol,
+  );
 
   return (
     <>
@@ -229,6 +220,7 @@ const CrossChain = ({
             isInvalid={isError}
             showBalance={!!address}
             tokenList={fromTokenList}
+            chain={fromChain}
           />
 
           <Flex alignItems="center" marginY={8}>
@@ -244,11 +236,12 @@ const CrossChain = ({
 
           <TokenAmountInput
             tokenAddressAtom={tokenOutAddressAtom}
-            amount={tokenOutAmount}
+            amount={maxTokenOutAmount}
             isReadOnly
             modalHeaderTitle="You Buy"
             label={`You Buy in ${toChain}`}
             tokenList={toTokenList}
+            chain={toChain}
           />
 
           <Box w="100%" h={12} />
@@ -258,7 +251,7 @@ const CrossChain = ({
           <Box w="100%" h={12} />
 
           <Button
-            isDisabled={!address || !data?.metamaskSwapTransaction || pageMode === 'flash'}
+            isDisabled={!address || !data || pageMode === 'flash'}
             w="100%"
             size="lg"
             height={['48px', '54px', '54px', '64px']}
@@ -266,9 +259,12 @@ const CrossChain = ({
             opacity={1}
             colorScheme="primary"
             onClick={async () => {
-              logger.debug(data?.metamaskSwapTransaction);
-              if (!data?.metamaskSwapTransaction || !address || !tokenInAddress) return;
-              const { gasLimit, ...rest } = data.metamaskSwapTransaction;
+              if (!data || !address || !tokenInAddress) return;
+              const transaction = data.find(
+                x => x?.dexAgg.expectedAmountOut === maxTokenOutAmount.toString(),
+              )?.metamaskSwapTransaction;
+              if (!transaction) return;
+              const { gasLimit, ...rest } = transaction;
 
               const provider = new ethers.providers.Web3Provider(
                 window.ethereum as unknown as ethers.providers.ExternalProvider,
@@ -361,11 +357,12 @@ const CrossChain = ({
           </Button>
         </Box>
 
-        {previewResult && debouncedTokenInAmount ? (
-          <SwapPreviewResult
-            previewResult={previewResult}
+        {previewResults && debouncedTokenInAmount ? (
+          <CrossChainSwapPreviewResult
+            chain={chain}
+            previewResults={previewResults}
             expectedInputAmount={Number(debouncedTokenInAmount)}
-            expectedOutputAmount={tokenOutAmount}
+            expectedOutputAmount={typeof maxTokenOutAmount === 'string' ? 0 : maxTokenOutAmount}
             isLoaded={!isLoading && !isRefetching}
           />
         ) : null}

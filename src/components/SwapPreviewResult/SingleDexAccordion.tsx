@@ -15,7 +15,8 @@ import {
 import Decimal from 'decimal.js';
 import { useAtomValue } from 'jotai';
 
-import { getTokenOutDenomAtom, tokenOutAtom } from 'src/domain/swap/atom';
+import { toTokenAtom } from 'src/domain/cross-chain/atom';
+import { getTokenOutDenomAtom } from 'src/domain/swap/atom';
 import { QuoteResponseDto } from 'src/types/quote';
 import withComma from 'src/utils/with-comma';
 
@@ -25,7 +26,7 @@ interface Props {
 }
 
 const SingleDexAccordion = ({ singleDexResult, isLoaded }: Props) => {
-  const tokenOut = useAtomValue(tokenOutAtom);
+  const tokenOut = useAtomValue(toTokenAtom);
   const getTokenOutDenom = useAtomValue(getTokenOutDenomAtom);
 
   return (

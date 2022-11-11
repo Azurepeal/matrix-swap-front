@@ -1,10 +1,19 @@
 import { QueryFunctionContext } from '@tanstack/query-core';
 
-import { GetQuoteRequestParams } from './types';
+import { Chain } from './domain/chain/types';
+import { CrossContractGetQuoteRequestParams, GetQuoteRequestParams } from './types';
 
 type CoinId = 'usd-coin';
 type TargetCurrency = 'krw' | 'usd';
-export type AxelarEndpoint = { endpoint: string; from: string; to: string };
+export type AxelarEndpoint = {
+  chain: Chain;
+  endpoint: string;
+  from: string;
+  to: string;
+  fromSymbol: string;
+  toSymbol: string;
+  amount: string;
+};
 
 export type ContextFromQueryKey<QueryKeyFunc extends (...args: any[]) => readonly any[]> =
   QueryFunctionContext<ReturnType<QueryKeyFunc>>;
@@ -24,7 +33,7 @@ const queryKeys = {
       endpoint: string,
       params: GetQuoteRequestParams,
     ): [string, GetQuoteRequestParams & { endpoint: string }] => ['quote', { ...params, endpoint }],
-    axelar: (endpoints: AxelarEndpoint[], params: GetQuoteRequestParams) =>
+    axelar: (endpoints: AxelarEndpoint[], params: CrossContractGetQuoteRequestParams) =>
       ['quote-axelar', { ...params, endpoints }] as const,
   },
 };

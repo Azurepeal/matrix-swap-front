@@ -26,6 +26,26 @@ export interface GetQuoteRequestParams {
   withCycle: boolean;
 }
 
+export interface CrossContractGetQuoteRequestParams {
+  from: string;
+  /**
+   * slippage 허용오차 10000 => 100%, 30 => 0.3%
+   */
+  slippageBps: number;
+  /**
+   * amount를 최대 몇 개로 분할할 것인지
+   */
+  maxSplit: number;
+  /**
+   * max edge of graph
+   */
+  maxEdge: number;
+  /**
+   * set true for flash loan
+   */
+  withCycle: boolean;
+}
+
 interface QuoteSingleSwapInfo {
   fromToken: string;
   toToken: string;

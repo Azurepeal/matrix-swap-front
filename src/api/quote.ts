@@ -1,12 +1,9 @@
 import { QueryFunctionContext } from 'react-query';
 
-import Decimal from 'decimal.js';
-
 import axiosInstance from 'src/config/axios';
-import queryKeys from 'src/query-key';
+import queryKeys, { AxelarEndpoint } from 'src/query-key';
 import { ContextFromQueryKey } from 'src/query-key';
 import { GetQuoteRequestParams, QuoteResponseDto } from 'src/types';
-import { logger } from 'src/utils/logger';
 
 const makeQuoteRequest = async (
   endpoint: string,
@@ -21,11 +18,13 @@ const makeQuoteRequest = async (
 
   return result;
 };
+
+export type FetchResult = Omit<QuoteResponseDto, 'ts' | 'error'> | undefined;
+export type CrossChainFetchResult = Omit<QuoteResponseDto & AxelarEndpoint, 'ts' | 'error'>;
+
 export const fetchQuote = async ({
   queryKey,
-}: QueryFunctionContext<ReturnType<typeof queryKeys.quote.calculate>>): Promise<
-  Omit<QuoteResponseDto, 'ts' | 'error'> | undefined
-> => {
+}: QueryFunctionContext<ReturnType<typeof queryKeys.quote.calculate>>): Promise<FetchResult> => {
   const [_key, { endpoint, ...queryParams }] = queryKey;
 
   if (!queryParams || queryParams.amount === '0') return;
@@ -35,25 +34,27 @@ export const fetchQuote = async ({
 
 export const fetchQuoteCrossChain = async ({
   queryKey,
-}: ContextFromQueryKey<typeof queryKeys.quote.axelar>) => {
+}: ContextFromQueryKey<typeof queryKeys.quote.axelar>): Promise<CrossChainFetchResult[]> => {
   const [_key, { endpoints, ...queryParams }] = queryKey;
 
-  const responses = await Promise.all(
+  return await Promise.all(
     endpoints.map(x => {
-      const { endpoint, from, to } = x;
+      const { endpoint, from, to, amount } = x;
       return makeQuoteRequest(endpoint, {
         ...queryParams,
+        amount,
         tokenInAddr: from,
         tokenOutAddr: to,
-      });
+      }).then(response => ({
+        ...response,
+        ...x,
+      }));
     }),
   );
 
-  logger.log(JSON.stringify(responses.map(x => x.dexAgg.expectedAmountOut)));
+  // logger.log(JSON.stringify(responses.map(x => x.dexAgg.expectedAmountOut)));
 
-  const sorted = responses.sort((a, b) =>
-    new Decimal(b.dexAgg.expectedAmountOut).comparedTo(a.dexAgg.expectedAmountOut),
-  );
-
-  return sorted[0];
+  // const sorted = responses.sort((a, b) =>
+  //   new Decimal(b.dexAgg.expectedAmountOut).comparedTo(a.dexAgg.expectedAmountOut),
+  // );
 };

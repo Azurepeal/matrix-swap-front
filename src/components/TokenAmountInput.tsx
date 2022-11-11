@@ -20,7 +20,7 @@ import { ethers } from 'ethers';
 import { PrimitiveAtom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { loadable } from 'jotai/utils';
 
-import { Token } from 'src/domain/chain/types';
+import { Chain, Token } from 'src/domain/chain/types';
 import {
   balanceAtom,
   tokenInAddressAtom,
@@ -43,6 +43,7 @@ interface Props {
   isInvalid?: boolean;
   showBalance?: boolean;
   tokenList: Token[];
+  chain: Chain;
 }
 
 const BASE_URL = 'https://static.eisenfinance.com/tokens';
@@ -57,9 +58,10 @@ const TokenAmountInput = ({
   isInvalid,
   showBalance,
   tokenList,
+  chain,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
-  const { currency, getPriceInCurrency } = useCurrency();
+  const { currency, getPriceInCurrency } = useCurrency(chain);
 
   const [selectedTokenAddress, setSelectedTokenAddress] = useAtom(tokenAddressAtom);
   const selectedToken = tokenList.find(x => x.address === selectedTokenAddress);

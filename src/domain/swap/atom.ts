@@ -10,8 +10,8 @@ import queryKeys, { ContextFromQueryKey } from 'src/query-key';
 import { filterDecimal, removeDotExceptFirstOne } from 'src/utils/with-comma';
 import { IERC20__factory } from 'types/ethers-contracts';
 
-import { chainAtom, tokenListAtom } from '../chain/atom';
-import { Token } from '../chain/types';
+import { tokenListAtom } from '../chain/atom';
+import { Chain, Token } from '../chain/types';
 import { fromTokenEndpoint } from '../cross-chain/atom';
 
 export const pageModeAtom = atom<'swap' | 'flash'>('swap');
@@ -140,7 +140,7 @@ export const slippageRatioAtom = atom<number>(1);
  * TODO: currency 관련 로직들 파일 분리
  *
  */
-export const useCurrency = () => {
+export const useCurrency = (chain: Chain) => {
   const tokenPriceListLoadable = useAtomValue(loadable(tokenPriceListAtom));
   const tokenPriceList =
     tokenPriceListLoadable.state === 'hasData' ? tokenPriceListLoadable.data : undefined;
@@ -148,8 +148,6 @@ export const useCurrency = () => {
   const currency = useAtomValue(targetCurrencyAtom);
   const currencyLoadable = useAtomValue(loadable(targetCurrencyInUSDCAtom));
   const currencyInUSDC = currencyLoadable.state === 'hasData' ? currencyLoadable.data : undefined;
-
-  const chain = useAtomValue(chainAtom);
 
   const getPriceInUSDC = (tokenAddr: string) => {
     const metaData = config.chain.metaData[chain];

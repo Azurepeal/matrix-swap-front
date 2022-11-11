@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import { atom } from 'jotai';
 import _ from 'lodash-es';
 
@@ -6,13 +7,23 @@ import { Chain, Token } from 'src/domain/chain/types';
 import { AxelarEndpoint } from 'src/query-key';
 
 import { tokenListMap } from '../chain/atom';
-import { tokenInAddressAtom, tokenOutAddressAtom } from '../swap/atom';
+import { tokenInAddressAtom, tokenInAmountAtom, tokenOutAddressAtom } from '../swap/atom';
 
 export const fromChainAtom = atom<Chain>('BNB');
 
 export const toChainAtom = atom<Chain>('polygon');
 
 export const isCrossChainAtom = atom(false);
+
+export const fromTokenEndpoint = atom<string>(get => {
+  const chain = get(fromChainAtom);
+  return config.chain.metaData[chain].apiEndpoint;
+});
+
+export const toTokenEndpoint = atom<string>(get => {
+  const chain = get(toChainAtom);
+  return config.chain.metaData[chain].apiEndpoint;
+});
 
 export const fromTokenListAtom = atom<Token[]>(get => {
   return _.intersectionBy(
@@ -28,16 +39,6 @@ export const toTokenListAtom = atom<Token[]>(get => {
     tokenListMap[get(fromChainAtom)],
     'symbol',
   );
-});
-
-export const fromTokenEndpoint = atom<string>(get => {
-  const chain = get(fromChainAtom);
-  return config.chain.metaData[chain].apiEndpoint;
-});
-
-export const toTokenEndpoint = atom<string>(get => {
-  const chain = get(toChainAtom);
-  return config.chain.metaData[chain].apiEndpoint;
 });
 
 export const fromTokenAtom = atom<Token | undefined>(get => {
@@ -71,22 +72,45 @@ export const toTokenAtom = atom<Token | undefined>(get => {
 });
 
 export const crossChainSwapEndpointsAtom = atom<AxelarEndpoint[]>(get => {
-  // fromChain [tokenInAdress] -> [?]
+  // fromChain [tokenInAdress] fromSymbol -> [fromOutToken] toSymbol
+
   // toChain [?] -> [tokenOutAddress]
   const fromSymbol = get(fromTokenAtom)?.symbol;
   const toSymbol = get(toTokenAtom)?.symbol;
 
-  if (!fromSymbol || !toSymbol) return [];
+  const fromInToken = get(fromTokenAtom);
+  const fromOutToken = get(fromTokenListAtom).find(x => x.symbol === toSymbol);
+  const toInToken = get(toTokenListAtom).find(x => x.symbol === fromSymbol);
+  const toOutToken = get(toTokenAtom);
+
+  if (
+    !fromSymbol ||
+    !toSymbol ||
+    !fromOutToken ||
+    !toInToken ||
+    !fromInToken ||
+    !toInToken ||
+    !toOutToken
+  )
+    return [];
   return [
     {
+      chain: get(fromChainAtom),
       endpoint: get(fromTokenEndpoint),
-      from: get(tokenInAddressAtom) ?? '',
-      to: get(fromTokenListAtom).find(x => x.symbol === toSymbol)?.address ?? '',
+      from: fromInToken.address,
+      to: fromOutToken.address,
+      amount: new Decimal(get(tokenInAmountAtom)).mul(Math.pow(10, fromInToken.decimals)).toFixed(),
+      fromSymbol,
+      toSymbol,
     },
     {
+      chain: get(toChainAtom),
       endpoint: get(toTokenEndpoint),
-      from: get(toTokenListAtom).find(x => x.symbol === fromSymbol)?.address ?? '',
-      to: get(tokenOutAddressAtom) ?? '',
+      from: toInToken.address,
+      to: toOutToken.address,
+      amount: new Decimal(get(tokenInAmountAtom)).mul(Math.pow(10, toInToken.decimals)).toFixed(),
+      fromSymbol,
+      toSymbol,
     },
   ];
 });

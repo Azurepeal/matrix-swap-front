@@ -13,9 +13,7 @@
     "format": "yarn prettier --write",
     "type-check": "yarn tsc -p tsconfig.json",
     "precommit": "yarn lint-staged",
-    "prepare": "husky install",
-    "typechain": "typechain --target=ethers-v5 \"artifacts/contracts/**/*.json\"",
-    "prebuild": "yarn typechain"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@chakra-ui/icons": "^1.1.7",

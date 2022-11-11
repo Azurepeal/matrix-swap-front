@@ -45,7 +45,7 @@ const config: MetaConfig = {
         },
         nativeToken: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         wrappedNativeToken: '0xd4949664cd82660aae99bedc034a0dea8a0bd517',
-        apiEndpoint: 'api-bsc.eisenfinance.com',
+        apiEndpoint: 'https://api-bsc.eisenfinance.com',
         getBlockExplorerUrl: (txHash: string) => `https://bscscan.com/tx/${txHash}`,
       },
       'polygon': {
@@ -56,7 +56,7 @@ const config: MetaConfig = {
         },
         nativeToken: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         wrappedNativeToken: '0xd4949664cd82660aae99bedc034a0dea8a0bd517',
-        apiEndpoint: 'api-polygon.eisenfinance.com',
+        apiEndpoint: 'https://api-polygon.eisenfinance.com',
         getBlockExplorerUrl: (txHash: string) => `https://polygonscan.com/tx/${txHash}`
       },
     },

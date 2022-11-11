@@ -4,6 +4,7 @@ import { GetQuoteRequestParams } from './types';
 
 type CoinId = 'usd-coin';
 type TargetCurrency = 'krw' | 'usd';
+export type AxelarEndpoint = { endpoint: string; from: string; to: string };
 
 export type ContextFromQueryKey<QueryKeyFunc extends (...args: any[]) => readonly any[]> =
   QueryFunctionContext<ReturnType<QueryKeyFunc>>;
@@ -19,8 +20,12 @@ const queryKeys = {
       ['currency', { coinId, targetCurrency }] as const,
   },
   quote: {
-    calculate: (endpoint: string | undefined, params: GetQuoteRequestParams | undefined) =>
-      ['quote', { ...params, endpoint }] as const,
+    calculate: (
+      endpoint: string,
+      params: GetQuoteRequestParams,
+    ): [string, GetQuoteRequestParams & { endpoint: string }] => ['quote', { ...params, endpoint }],
+    axelar: (endpoints: AxelarEndpoint[], params: GetQuoteRequestParams) =>
+      ['quote-axelar', { ...params, endpoints }] as const,
   },
 };
 

@@ -109,29 +109,22 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
   const [needRefreshTimer, setNeedRefreshTimer] = useState(false);
 
   const { data, isLoading, isRefetching, refetch, isError } = useQuery(
-    queryKeys.quote.calculate(
-      config.chain.metaData[chain].apiEndpoint,
-      selectedTokenIn && selectedTokenOut && tokenInAmount
-        ? {
-            tokenInAddr: selectedTokenIn.address,
-            tokenOutAddr: selectedTokenOut.address,
-            from: address!,
-            amount: new Decimal(tokenInAmount)
-              .mul(Math.pow(10, selectedTokenIn.decimals))
-              .toFixed(),
-            slippageBps: slippageRatio * 100,
-            /**
-             * constant
-             */
-            maxEdge: 4,
-            /**
-             * constant
-             */
-            maxSplit: 10,
-            withCycle: pageMode === 'flash',
-          }
-        : undefined,
-    ),
+    queryKeys.quote.calculate(config.chain.metaData[chain].apiEndpoint, {
+      tokenInAddr: selectedTokenIn!.address,
+      tokenOutAddr: selectedTokenOut!.address,
+      from: address!,
+      amount: new Decimal(tokenInAmount).mul(Math.pow(10, selectedTokenIn!.decimals)).toFixed(),
+      slippageBps: slippageRatio * 100,
+      /**
+       * constant
+       */
+      maxEdge: 4,
+      /**
+       * constant
+       */
+      maxSplit: 10,
+      withCycle: pageMode === 'flash',
+    }),
     fetchQuote,
     {
       enabled: Boolean(selectedTokenIn?.address && selectedTokenOut?.address && tokenInAmount),

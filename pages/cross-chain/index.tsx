@@ -12,7 +12,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useAtomCallback, useHydrateAtoms } from 'jotai/utils';
 
 import config from 'meta.config';
-import { fetchQuote } from 'src/api/quote';
+import { fetchQuoteCrossChain } from 'src/api/quote';
 import SlippageInput from 'src/components/SlippageInput';
 import SwapPreviewResult from 'src/components/SwapPreviewResult';
 import TokenAmountInput from 'src/components/TokenAmountInput';
@@ -20,9 +20,12 @@ import { keyMap } from 'src/constant/storage-key';
 import { chainAtom, defaultTokenList } from 'src/domain/chain/atom';
 import { Token } from 'src/domain/chain/types';
 import {
+  crossChainSwapEndpointsAtom,
   fromChainAtom,
+  fromTokenAtom,
   fromTokenListAtom,
   toChainAtom,
+  toTokenAtom,
   toTokenListAtom,
 } from 'src/domain/cross-chain/atom';
 import {
@@ -33,9 +36,7 @@ import {
   tokenInAddressAtom,
   tokenInAmountAtom,
   tokenInAmountStringAtom,
-  tokenInAtom,
   tokenOutAddressAtom,
-  tokenOutAtom,
 } from 'src/domain/swap/atom';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useWallet } from 'src/hooks/useWallet';
@@ -68,8 +69,8 @@ const CrossChain = ({
   const { address, sendTransaction } = useWallet();
   const toast = useToast();
 
-  const selectedTokenIn = useAtomValue(tokenInAtom);
-  const selectedTokenOut = useAtomValue(tokenOutAtom);
+  const selectedTokenIn = useAtomValue(fromTokenAtom);
+  const selectedTokenOut = useAtomValue(toTokenAtom);
 
   const [tokenInAmountString, setTokenInAmountString] = useAtom(tokenInAmountStringAtom);
   const tokenInAmount = useAtomValue(tokenInAmountAtom);
@@ -114,36 +115,29 @@ const CrossChain = ({
     ? getTokenOutDenom(previewResult.dexAgg.expectedAmountOut)
     : 0;
 
-  const [queryEnabled, setQueryEnabled] = useState(true);
   const [needRefreshTimer, setNeedRefreshTimer] = useState(false);
 
+  const swapEndpoints = useAtomValue(crossChainSwapEndpointsAtom);
   const { data, isLoading, isRefetching, refetch, isError } = useQuery(
-    queryKeys.quote.calculate(
-      config.chain.metaData[chain].apiEndpoint,
-      selectedTokenIn && selectedTokenOut && tokenInAmount
-        ? {
-            tokenInAddr: selectedTokenIn.address,
-            tokenOutAddr: selectedTokenOut.address,
-            from: address!,
-            amount: new Decimal(tokenInAmount)
-              .mul(Math.pow(10, selectedTokenIn.decimals))
-              .toFixed(),
-            slippageBps: slippageRatio * 100,
-            /**
-             * constant
-             */
-            maxEdge: 4,
-            /**
-             * constant
-             */
-            maxSplit: 10,
-            withCycle: pageMode === 'flash',
-          }
-        : undefined,
-    ),
-    fetchQuote,
+    queryKeys.quote.axelar(swapEndpoints, {
+      tokenInAddr: selectedTokenIn!.address,
+      tokenOutAddr: selectedTokenOut!.address,
+      from: address!,
+      amount: new Decimal(tokenInAmount).mul(Math.pow(10, selectedTokenIn!.decimals)).toFixed(),
+      slippageBps: slippageRatio * 100,
+      /**
+       * constant
+       */
+      maxEdge: 4,
+      /**
+       * constant
+       */
+      maxSplit: 10,
+      withCycle: pageMode === 'flash',
+    }),
+    fetchQuoteCrossChain,
     {
-      enabled: queryEnabled,
+      enabled: Boolean(selectedTokenIn?.address && selectedTokenOut?.address && tokenInAmount),
       refetchOnWindowFocus: false,
       onSettled: () => setNeedRefreshTimer(true),
       retry: 3,

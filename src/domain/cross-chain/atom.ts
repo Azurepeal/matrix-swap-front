@@ -9,7 +9,7 @@ import { AxelarEndpoint } from 'src/query-key';
 import { tokenListMap } from '../chain/atom';
 import { tokenInAddressAtom, tokenInAmountAtom, tokenOutAddressAtom } from '../swap/atom';
 
-const crossChainTokenMap: Record<Chain, Token[]> = {
+export const crossChainTokenMap: Record<Chain, Token[]> = {
   polygon: [
     {
       address: '0x750e4C4984a9e0f12978eA6742Bc1c5D248f40ed',

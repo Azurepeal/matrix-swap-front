@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 
@@ -46,7 +46,6 @@ import {
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useWallet } from 'src/hooks/useWallet';
 import queryKeys from 'src/query-key';
-import { QuoteResponseDto } from 'src/types';
 import { logger } from 'src/utils/logger';
 import { removeDotExceptFirstOne } from 'src/utils/with-comma';
 import { IERC20__factory } from 'types/ethers-contracts/factories';
@@ -97,15 +96,6 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
   const getTokenOutDenom = useAtomValue(getTokenOutDenomAtom);
   const updateFetchKey = useSetAtom(balanceFetchKey);
 
-  const [previewResult, setPreviewResult] = useState<Omit<
-    QuoteResponseDto,
-    'ts' | 'error'
-  > | null>();
-  const tokenOutAmount = previewResult
-    ? getTokenOutDenom(previewResult.dexAgg.expectedAmountOut)
-    : 0;
-
-  const [queryEnabled, setQueryEnabled] = useState(true);
   const [needRefreshTimer, setNeedRefreshTimer] = useState(false);
 
   const { data, isLoading, isRefetching, refetch, isError } = useQuery(
@@ -148,24 +138,14 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
     ),
   );
 
-  useEffect(() => {
-    if (!data || !selectedTokenOut) return;
-    logger.debug(data);
+  const previewResult = useMemo(() => {
+    if (!data || !selectedTokenOut || isError || !debouncedTokenInAmount) return null;
+    return data;
+  }, [data, selectedTokenOut, isError, debouncedTokenInAmount]);
 
-    setPreviewResult(data);
-  }, [data, selectedTokenOut]);
-
-  useEffect(() => {
-    if (!isError) return;
-    setPreviewResult(null);
-  }, [isError]);
-
-  useEffect(() => {
-    if (!debouncedTokenInAmount) {
-      setPreviewResult(null);
-      return;
-    }
-  }, [debouncedTokenInAmount]);
+  const tokenOutAmount = previewResult
+    ? getTokenOutDenom(previewResult.dexAgg.expectedAmountOut)
+    : 0;
 
   useEffect(() => {
     if (!selectedTokenIn || !selectedTokenOut) return;

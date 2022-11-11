@@ -112,7 +112,7 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
       /**
        * constant
        */
-      maxSplit: 10,
+      maxSplit: 1,
       withCycle: pageMode === 'flash',
     }),
     fetchQuote,

@@ -44,8 +44,6 @@ yarn-error.log*
 # Sentry
 .sentryclirc
 
-# typechain
-/types/ethers-contracts
 
 node_modules
 .env

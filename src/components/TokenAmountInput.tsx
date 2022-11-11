@@ -7,7 +7,6 @@ import {
   Avatar,
   InputGroup,
   Input,
-  InputRightElement,
   Text,
   Box,
   Heading,
@@ -35,6 +34,7 @@ import TokenSelectDialog from './TokenSelectDialog';
 
 interface Props {
   tokenAddressAtom: PrimitiveAtom<string | undefined>;
+  counterTokenAddressAtom: PrimitiveAtom<string | undefined>;
   amount: number | string | undefined;
   handleChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   isReadOnly?: boolean;
@@ -157,13 +157,13 @@ const TokenAmountInput = ({
               focusBorderColor="secondary.200"
               onWheel={e => (e.target as HTMLInputElement).blur()}
             />
-            <InputRightElement paddingRight={4} backgroundColor="blueGray">
+            {/* <InputRightElement paddingRight={4} backgroundColor="blueGray">
               <Box paddingX={4}>
                 <Text textAlign="center" fontSize={['sm', 'md', 'md', 'md']}>
                   {selectedToken?.symbol}
                 </Text>
               </Box>
-            </InputRightElement>
+            </InputRightElement> */}
           </InputGroup>
           {isInvalid ? (
             <FormErrorMessage fontSize={['sm', 'md', 'md', 'md']}>

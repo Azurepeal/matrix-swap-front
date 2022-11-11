@@ -20,6 +20,7 @@ import { chainAtom, defaultTokenList } from 'src/domain/chain/atom';
 import { Token } from 'src/domain/chain/types';
 import {
   crossChainSwapEndpointsAtom,
+  crossChainTokenMap,
   fromChainAtom,
   fromTokenAtom,
   fromTokenListAtom,
@@ -78,10 +79,10 @@ const CrossChain = ({
   const initAtomAddresses = useAtomCallback<void, void>(
     useCallback((get, set) => {
       set(fromChainAtom, 'BNB');
-      set(tokenInAddressAtom, '0x55d398326f99059ff775485246999027b3197955');
+      set(tokenInAddressAtom, crossChainTokenMap['BNB'][0].address);
 
       set(toChainAtom, 'polygon');
-      set(tokenOutAddressAtom, '0xb33eaad8d922b1083446dc23f610c2567fb5180f');
+      set(tokenOutAddressAtom, crossChainTokenMap['polygon'][1].address);
     }, []),
   );
 

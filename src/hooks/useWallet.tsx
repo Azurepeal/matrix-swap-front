@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from 'react';
 
-import Decimal from 'decimal.js';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithReducer } from 'jotai/utils';
 
@@ -126,8 +125,8 @@ export const useWallet = () => {
 
       return walletExtension.sendTransaction({
         ...params,
-        maxPriorityFeePerGas: new Decimal('1.5e9').toHexadecimal(),
-        maxFeePerGas: new Decimal('2.75e10').toHexadecimal(),
+        // maxPriorityFeePerGas: new Decimal('1.5e9').toHexadecimal(),
+        // maxFeePerGas: new Decimal('2.75e10').toHexadecimal(),
       });
     },
     [state.address, state.type],

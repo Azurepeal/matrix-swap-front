@@ -34,7 +34,6 @@ import TokenSelectDialog from './TokenSelectDialog';
 
 interface Props {
   tokenAddressAtom: PrimitiveAtom<string | undefined>;
-  counterTokenAddressAtom: PrimitiveAtom<string | undefined>;
   amount: number | string | undefined;
   handleChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   isReadOnly?: boolean;

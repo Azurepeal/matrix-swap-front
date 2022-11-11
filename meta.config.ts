@@ -77,8 +77,8 @@ const config: MetaConfig = {
         wrappedNativeToken: '0xd4949664cd82660aae99bedc034a0dea8a0bd517',
         apiEndpoint: 'https://api-polygon.eisenfinance.com',
         getBlockExplorerUrl: (txHash: string) => `https://polygonscan.com/tx/${txHash}`,
-        routeProxyAddress: '0x208dA73F71fE00387C3fe0c4D71b77b39a8D1c5D',
-        approveProxyAddress: '0xcCa9D8D473762358A961aaFeCf1dd341214dc9c2'
+        routeProxyAddress: '0x0cd6e5E6005f12AE69Df563594dceC2D79eD6018',
+        approveProxyAddress: '0x2081Dd6EEe991f4e4F0EB3315B7A15bF83C00Bb5'
       },
     },
   },

@@ -28,6 +28,7 @@ export type TransactionParams = Record<string, string>;
 
 export interface WalletExtension {
   connect: (chain: Chain) => Promise<Wallet | undefined>;
+  switchChain: (chain: Chain) => Promise<void>;
   getBalance: (address: string) => Promise<unknown>;
   isValid?: (address: string, ...args: any) => Promise<boolean>;
   isActive?: (address: string, ...args: any) => Promise<boolean>;
@@ -54,32 +55,32 @@ function isMetaMaskError(error: unknown): error is MetaMaskError {
 }
 
 export class Metamask implements WalletExtension {
-  async connect(chain: Chain) {
+  async switchChain(chain: Chain) {
     const chainMetaData = config.chain.metaData[chain];
     if (typeof window.ethereum === undefined) return;
     if (!chainMetaData) return;
-
     try {
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: chainMetaData.metamaskParams.chainId }],
-        });
-      } catch (switchError) {
-        // This error code indicates that the chain has not been added to MetaMask.
-        if (isMetaMaskError(switchError) && switchError.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [chainMetaData.metamaskParams],
-            });
-          } catch (addError) {
-            // handle "add" error
-          }
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: chainMetaData.metamaskParams.chainId }],
+      });
+    } catch (switchError) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (isMetaMaskError(switchError) && switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [chainMetaData.metamaskParams],
+          });
+        } catch (addError) {
+          // handle "add" error
         }
-        // handle other "switch" errors
       }
-
+      // handle other "switch" errors
+    }
+  }
+  async connect() {
+    try {
       const res = await window.ethereum.request<string[]>({
         method: 'eth_requestAccounts',
         // method: 'wallet_switchEthereumChain',

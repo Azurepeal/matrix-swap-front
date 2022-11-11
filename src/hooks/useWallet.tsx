@@ -3,17 +3,22 @@ import { useCallback, useEffect } from 'react';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithReducer } from 'jotai/utils';
 
-import config from 'meta.config';
 import { keyMap } from 'src/constant/storage-key';
 import { chainAtom } from 'src/domain/chain/atom';
 import { fromChainAtom } from 'src/domain/cross-chain/atom';
 import { balanceFetchKey } from 'src/domain/swap/atom';
-import { TransactionParams, WalletExtensionFactory, WALLET_TYPES } from 'src/utils/wallet';
+import {
+  TransactionParams,
+  WalletExtension,
+  WalletExtensionFactory,
+  WALLET_TYPES,
+} from 'src/utils/wallet';
 
 interface WalletState {
   type?: ValueOf<typeof WALLET_TYPES>;
   address?: string;
   requestedWalletType?: ValueOf<typeof WALLET_TYPES>;
+  walletExtension?: WalletExtension;
 }
 
 const initialWalletState: WalletState = {
@@ -78,15 +83,11 @@ export const useWallet = () => {
       const walletExtension = walletExtensionFactory.createWalletExtension();
       if (!walletExtension) return null;
 
-      // select "fromChain" if axelar mode;
-
-      const targetChain = chain in config.chain.metaData ? chain : fromChain;
-
-      const res = await walletExtension?.connect(targetChain);
+      const res = await walletExtension?.connect();
 
       if (!res) return null;
 
-      dispatch({ type: CONNECT_WALLET_SUCCESS_ACTION, payload: res });
+      dispatch({ type: CONNECT_WALLET_SUCCESS_ACTION, payload: { ...res, walletExtension } });
       updateFetchKey(+new Date());
 
       if (typeof window.localStorage === undefined) return null;
@@ -94,7 +95,7 @@ export const useWallet = () => {
 
       return res;
     },
-    [dispatch, chain],
+    [dispatch],
   );
 
   const disconnect = useCallback(() => {
@@ -104,14 +105,8 @@ export const useWallet = () => {
   }, [state]);
 
   const getBalance = useCallback(async () => {
-    if (!state.type || !state.address) return;
-
-    const walletExtensionFactory = new WalletExtensionFactory(state.type);
-    const walletExtension = walletExtensionFactory.createWalletExtension();
-
-    if (!walletExtension) return;
-
-    return walletExtension.getBalance(state.address);
+    if (!state.address || !state.walletExtension) return;
+    return state.walletExtension.getBalance(state.address);
   }, [state.type, state.address]);
 
   const sendTransaction = useCallback(

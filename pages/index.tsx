@@ -70,7 +70,7 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
   const tokenInAddress = useAtomValue(tokenInAddressAtom);
   const tokenOutAddress = useAtomValue(tokenOutAddressAtom);
 
-  const { address, sendTransaction } = useWallet();
+  const { address, sendTransaction, walletExtension } = useWallet();
   const toast = useToast();
 
   const selectedTokenIn = useAtomValue(tokenInAtom);
@@ -272,6 +272,8 @@ const Swap = ({ defaultTokenList }: InferGetServerSidePropsType<typeof getServer
               const provider = new ethers.providers.Web3Provider(
                 window.ethereum as unknown as ethers.providers.ExternalProvider,
               );
+
+              walletExtension?.switchChain(chain);
               const signer = provider.getSigner();
 
               if (tokenInAddress !== '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
